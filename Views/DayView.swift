@@ -19,15 +19,10 @@ struct DayView: View {
     @State private var dailyLog: DailyLog?
     @State private var bodyMetrics: BodyMetrics?
 
-    // Meals fetch (predicate updated when the selected day changes)
-    @FetchRequest private var meals: FetchedResults<Meal>
-
-    init() {
-        // start with an empty fetch; we’ll set the predicate in rebind(to:)
-        _meals = FetchRequest<Meal>(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Meal.timestamp, ascending: true)],
-            predicate: NSPredicate(value: false)
-        )
+    // Use the relationship directly instead of @FetchRequest
+    private var mealsSorted: [Meal] {
+        let arr = (dailyLog?.meals?.allObjects as? [Meal]) ?? []
+        return arr.sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
     }
 
     var body: some View {
@@ -36,9 +31,7 @@ struct DayView: View {
                 // Date + actions
                 Section {
                     DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                        .onChange(of: selectedDate) { _, new in
-                            rebind(to: new)
-                        }
+                        .onChange(of: selectedDate) { _, new in rebind(to: new) }
 
                     HStack {
                         Button("Today") {
@@ -63,13 +56,11 @@ struct DayView: View {
 
                 // Meals
                 Section("Meals") {
-                    ForEach(meals) { m in
+                    ForEach(mealsSorted, id: \.objectID) { m in
                         let time = (m.timestamp ?? Date()).formatted(date: .omitted, time: .shortened)
                         let type = m.typeRaw ?? "Meal"
                         let loc  = (m.location ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                         let desc = (m.desc ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-
-                        // Build "8:00 | Breakfast | Acasa | Omleta…"
                         let parts = [time, type, loc.isEmpty ? nil : loc, desc.isEmpty ? nil : desc].compactMap { $0 }
 
                         Text(parts.joined(separator: " | "))
@@ -101,7 +92,7 @@ struct DayView: View {
 
     // MARK: - Helpers
 
-    /// Ensure there is a DailyLog for the given day, bind BodyMetrics, and update the meals fetch predicate.
+    /// Ensure there is a DailyLog for the given day and bind BodyMetrics.
     private func rebind(to day: Date) {
         // fetch or create DailyLog
         let r: NSFetchRequest<DailyLog> = DailyLog.fetchRequest()
@@ -118,15 +109,7 @@ struct DayView: View {
             dailyLog = log
             try? ctx.save()
         }
-
         bodyMetrics = dailyLog?.bodyMetrics
-
-        // update the fetch request’s predicate (note: use _meals, not meals)
-        if let log = dailyLog {
-            _meals.nsPredicate = NSPredicate(format: "log == %@", log)
-        } else {
-            _meals.nsPredicate = NSPredicate(value: false)
-        }
     }
 
     private func addMeal(type: String, at time: Date, location: String?, desc: String?) {
@@ -142,7 +125,7 @@ struct DayView: View {
     }
 
     private func deleteMeals(at offsets: IndexSet) {
-        offsets.map { meals[$0] }.forEach(ctx.delete)
+        offsets.map { mealsSorted[$0] }.forEach(ctx.delete)
         try? ctx.save()
     }
 
