@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		752DEDD22E7FFA7D000419E6 /* Persistance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752DEDD12E7FFA75000419E6 /* Persistance.swift */; };
+		752DEDD42E800050000419E6 /* HealthAutoSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752DEDD32E800048000419E6 /* HealthAutoSync.swift */; };
 		75466BEB2E7FF2A60068D992 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75466BEA2E7FF2820068D992 /* HealthKitManager.swift */; };
 		75E878682E7F0DC200788015 /* Date+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E878652E7F07B300788015 /* Date+Helpers.swift */; };
 		75E878692E7F0DC800788015 /* ReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E878672E7F082600788015 /* ReportView.swift */; };
@@ -16,6 +18,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		752DEDD12E7FFA75000419E6 /* Persistance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistance.swift; sourceTree = "<group>"; };
+		752DEDD32E800048000419E6 /* HealthAutoSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthAutoSync.swift; sourceTree = "<group>"; };
 		75466BEA2E7FF2820068D992 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		75E8784A2E7EE87800788015 /* FitTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FitTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		75E878612E7F078600788015 /* DayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayView.swift; sourceTree = "<group>"; };
@@ -68,6 +72,8 @@
 		75E878412E7EE87800788015 = {
 			isa = PBXGroup;
 			children = (
+				752DEDD32E800048000419E6 /* HealthAutoSync.swift */,
+				752DEDD12E7FFA75000419E6 /* Persistance.swift */,
 				75466BE92E7FF2700068D992 /* Managers */,
 				75E878602E7F074A00788015 /* Utilities */,
 				75E8785F2E7F074100788015 /* Reporting */,
@@ -188,9 +194,11 @@
 				75E8786D2E7F0DDE00788015 /* DayView.swift in Sources */,
 				75E8786C2E7F0DDA00788015 /* BodySection.swift in Sources */,
 				75E878692E7F0DC800788015 /* ReportView.swift in Sources */,
+				752DEDD22E7FFA7D000419E6 /* Persistance.swift in Sources */,
 				75E878682E7F0DC200788015 /* Date+Helpers.swift in Sources */,
 				75466BEB2E7FF2A60068D992 /* HealthKitManager.swift in Sources */,
 				75E8786B2E7F0DD500788015 /* AddMealView.swift in Sources */,
+				752DEDD42E800050000419E6 /* HealthAutoSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

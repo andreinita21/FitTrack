@@ -11,13 +11,23 @@ import CoreData
 @main
 struct FitTrackApp: App {
     let persistence = PersistenceController.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistence.container.viewContext)
-                // Ask for Health permissions on launch (safe if capability + plist key are set)
-                .task { await HealthKitManager.shared.requestAuthorizationIfNeeded() }
+                // Ask for Health permission & do an initial sync on first launch
+                .task {
+                    await HealthKitManager.shared.requestAuthorizationIfNeeded()
+                    await HealthAutoSync.syncRecent(daysBack: 30, ctx: persistence.container.viewContext)
+                }
+        }
+        // Re-run a quick sync whenever the app becomes active
+        .onChange(of: scenePhase) { _, newValue in
+            if newValue == .active {
+                Task { await HealthAutoSync.syncRecent(daysBack: 30, ctx: persistence.container.viewContext) }
+            }
         }
     }
 }

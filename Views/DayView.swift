@@ -15,6 +15,10 @@ struct DayView: View {
     @State private var selectedDate = Date().startOfDayLocal
     @State private var showingAddMeal = false
 
+    // Health range import UI
+    @State private var rangeStart = Calendar.current.date(byAdding: .day, value: -7, to: Date())!.startOfDayLocal
+    @State private var rangeEnd   = Date().startOfDayLocal
+
     // Core Data objects for the selected day
     @State private var dailyLog: DailyLog?
     @State private var bodyMetrics: BodyMetrics?
@@ -28,20 +32,28 @@ struct DayView: View {
     var body: some View {
         NavigationStack {
             List {
-                // Date + actions
+                // Date + Today
                 Section {
                     DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
                         .onChange(of: selectedDate) { _, new in rebind(to: new) }
 
-                    HStack {
-                        Button("Today") {
-                            selectedDate = Date().startOfDayLocal
-                            rebind(to: selectedDate)
-                        }
-                        Spacer()
-                        Button("Import from Health") {
-                            Task { await importFromHealth() }
-                        }
+                    Button("Today") {
+                        selectedDate = Date().startOfDayLocal
+                        rebind(to: selectedDate)
+                    }
+                }
+
+                // Health import (separate section)
+                Section("Health Import (read-only)") {
+                    Button("Import for Selected Day") {
+                        Task { await importDayFromHealth(selectedDate) }
+                    }
+
+                    DatePicker("From", selection: $rangeStart, displayedComponents: .date)
+                    DatePicker("To (inclusive)", selection: $rangeEnd, displayedComponents: .date)
+
+                    Button("Import Range") {
+                        Task { await importRangeFromHealth(start: rangeStart, endInclusive: rangeEnd) }
                     }
                 }
 
@@ -49,8 +61,7 @@ struct DayView: View {
                 if let bm = bodyMetrics,
                    let s = bm.sleepStart, let e = bm.sleepEnd, e > s {
                     Section("Sleep") {
-                        Text(sleepSummary(start: s, end: e))
-                            .font(.body)
+                        Text(sleepSummary(start: s, end: e)).font(.body)
                     }
                 }
 
@@ -64,7 +75,7 @@ struct DayView: View {
                         let parts = [time, type, loc.isEmpty ? nil : loc, desc.isEmpty ? nil : desc].compactMap { $0 }
 
                         Text(parts.joined(separator: " | "))
-                            .lineLimit(nil)                           // allow multiline wrapping
+                            .lineLimit(nil)
                             .fixedSize(horizontal: false, vertical: true)
                             .font(.body)
                             .padding(.vertical, 2)
@@ -94,7 +105,6 @@ struct DayView: View {
 
     /// Ensure there is a DailyLog for the given day and bind BodyMetrics.
     private func rebind(to day: Date) {
-        // fetch or create DailyLog
         let r: NSFetchRequest<DailyLog> = DailyLog.fetchRequest()
         r.predicate = NSPredicate(format: "date == %@", day as NSDate)
         r.fetchLimit = 1
@@ -140,41 +150,51 @@ struct DayView: View {
     }
 
     // MARK: - Health import (READ-ONLY; fill but do not overwrite)
-    private func importFromHealth() async {
+
+    /// Import just one day (selected or any).
+    private func importDayFromHealth(_ day: Date) async {
         await HealthKitManager.shared.requestAuthorizationIfNeeded()
+        // ensure we have a log/bm for that day
+        rebind(to: day)
         guard let bm = bodyMetrics else { return }
         do {
-            // Only fill if missing/zero
-
-            // Sleep
             if (bm.sleepStart == nil || bm.sleepEnd == nil),
-               let win = try await HealthKitManager.shared.mainSleepWindow(on: selectedDate) {
+               let win = try await HealthKitManager.shared.mainSleepWindow(on: day) {
                 if bm.sleepStart == nil { bm.sleepStart = win.start }
                 if bm.sleepEnd == nil   { bm.sleepEnd   = win.end }
             }
-
-            // Steps (Int32 scalar defaults to 0)
             if bm.steps == 0 {
-                let steps = try await HealthKitManager.shared.stepsTotal(on: selectedDate)
+                let steps = try await HealthKitManager.shared.stepsTotal(on: day)
                 bm.steps = Int32(steps)
             }
-
-            // Hydration (Double scalar defaults to 0)
             if bm.hydrationLiters == 0 {
-                let liters = try await HealthKitManager.shared.waterLiters(on: selectedDate)
+                let liters = try await HealthKitManager.shared.waterLiters(on: day)
                 if liters > 0 { bm.hydrationLiters = liters }
             }
-
-            // Weight (Double scalar defaults to 0)
             if bm.weightKg == 0,
-               let w = try await HealthKitManager.shared.latestWeightKg(on: selectedDate),
+               let w = try await HealthKitManager.shared.latestWeightKg(on: day),
                w > 0 {
                 bm.weightKg = w
             }
-
             try bm.managedObjectContext?.save()
+            // if we imported for a different day than currently shown, no-op; if same, UI already reflects it
         } catch {
             print("Health import failed:", error)
         }
+    }
+
+    /// Import for a whole range of days (inclusive), without overwriting existing values.
+    private func importRangeFromHealth(start: Date, endInclusive: Date) async {
+        await HealthKitManager.shared.requestAuthorizationIfNeeded()
+        let cal = Calendar.current
+        var day = cal.startOfDay(for: start)
+        let last = cal.startOfDay(for: endInclusive)
+        while day <= last {
+            await importDayFromHealth(day)
+            guard let next = cal.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+        // refresh UI if current selected day is inside the range
+        rebind(to: selectedDate)
     }
 }
