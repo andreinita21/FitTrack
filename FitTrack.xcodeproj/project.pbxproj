@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		752DEDD22E7FFA7D000419E6 /* Persistance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752DEDD12E7FFA75000419E6 /* Persistance.swift */; };
 		752DEDD42E800050000419E6 /* HealthAutoSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752DEDD32E800048000419E6 /* HealthAutoSync.swift */; };
+		752DEDD62E802E3E000419E6 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752DEDD52E802DE0000419E6 /* InsightsView.swift */; };
+		752DEDD82E80390A000419E6 /* Create UI+Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752DEDD72E8038FE000419E6 /* Create UI+Keyboard.swift */; };
+		752DEDDA2E8062A8000419E6 /* WeightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752DEDD92E8062A0000419E6 /* WeightView.swift */; };
 		75466BEB2E7FF2A60068D992 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75466BEA2E7FF2820068D992 /* HealthKitManager.swift */; };
 		75E878682E7F0DC200788015 /* Date+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E878652E7F07B300788015 /* Date+Helpers.swift */; };
 		75E878692E7F0DC800788015 /* ReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E878672E7F082600788015 /* ReportView.swift */; };
@@ -20,6 +23,9 @@
 /* Begin PBXFileReference section */
 		752DEDD12E7FFA75000419E6 /* Persistance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistance.swift; sourceTree = "<group>"; };
 		752DEDD32E800048000419E6 /* HealthAutoSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthAutoSync.swift; sourceTree = "<group>"; };
+		752DEDD52E802DE0000419E6 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		752DEDD72E8038FE000419E6 /* Create UI+Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Create UI+Keyboard.swift"; sourceTree = "<group>"; };
+		752DEDD92E8062A0000419E6 /* WeightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightView.swift; sourceTree = "<group>"; };
 		75466BEA2E7FF2820068D992 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		75E8784A2E7EE87800788015 /* FitTrack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FitTrack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		75E878612E7F078600788015 /* DayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayView.swift; sourceTree = "<group>"; };
@@ -72,6 +78,7 @@
 		75E878412E7EE87800788015 = {
 			isa = PBXGroup;
 			children = (
+				752DEDD72E8038FE000419E6 /* Create UI+Keyboard.swift */,
 				752DEDD32E800048000419E6 /* HealthAutoSync.swift */,
 				752DEDD12E7FFA75000419E6 /* Persistance.swift */,
 				75466BE92E7FF2700068D992 /* Managers */,
@@ -94,6 +101,8 @@
 		75E8785E2E7F073100788015 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				752DEDD92E8062A0000419E6 /* WeightView.swift */,
+				752DEDD52E802DE0000419E6 /* InsightsView.swift */,
 				75E878632E7F079C00788015 /* AddMealView.swift */,
 				75E878622E7F079200788015 /* BodySection.swift */,
 				75E878612E7F078600788015 /* DayView.swift */,
@@ -194,9 +203,12 @@
 				75E8786D2E7F0DDE00788015 /* DayView.swift in Sources */,
 				75E8786C2E7F0DDA00788015 /* BodySection.swift in Sources */,
 				75E878692E7F0DC800788015 /* ReportView.swift in Sources */,
+				752DEDDA2E8062A8000419E6 /* WeightView.swift in Sources */,
 				752DEDD22E7FFA7D000419E6 /* Persistance.swift in Sources */,
+				752DEDD82E80390A000419E6 /* Create UI+Keyboard.swift in Sources */,
 				75E878682E7F0DC200788015 /* Date+Helpers.swift in Sources */,
 				75466BEB2E7FF2A60068D992 /* HealthKitManager.swift in Sources */,
+				752DEDD62E802E3E000419E6 /* InsightsView.swift in Sources */,
 				75E8786B2E7F0DD500788015 /* AddMealView.swift in Sources */,
 				752DEDD42E800050000419E6 /* HealthAutoSync.swift in Sources */,
 			);

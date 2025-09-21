@@ -11,12 +11,13 @@ struct ContentView: View {
     var body: some View {
         TabView {
             DayView()
-                .tabItem { Label("Today", systemImage: "calendar") }
+                .tabItem { Label("Health Summary", systemImage: "chart.bar.xaxis") }
 
             ReportView()
-                .tabItem { Label("Report", systemImage: "doc.plaintext") }
+                .tabItem { Label("Report", systemImage: "doc.text") }
+
+            WeightView()
+                .tabItem { Label("Weight", systemImage: "scalemass") }
         }
     }
 }
-
-#Preview { ContentView() }

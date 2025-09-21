@@ -74,7 +74,7 @@ enum HealthAutoSync {
         }
         // Weight (only if zero)
         if bm.weightKg == 0,
-           let w = try await HealthKitManager.shared.latestWeightKg(on: day),
+           let w = try await HealthKitManager.shared.latestWeightKg(upTo: day),
            w > 0 {
             bm.weightKg = w
         }

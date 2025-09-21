@@ -14,8 +14,9 @@ struct DayView: View {
     // UI state
     @State private var selectedDate = Date().startOfDayLocal
     @State private var showingAddMeal = false
+    @State private var refreshTick = 0   // forces meals list refresh after add/delete
 
-    // Health range import UI
+    // Health import range (inclusive)
     @State private var rangeStart = Calendar.current.date(byAdding: .day, value: -7, to: Date())!.startOfDayLocal
     @State private var rangeEnd   = Date().startOfDayLocal
 
@@ -23,7 +24,7 @@ struct DayView: View {
     @State private var dailyLog: DailyLog?
     @State private var bodyMetrics: BodyMetrics?
 
-    // Use the relationship directly instead of @FetchRequest
+    // Meals derived from the relationship, sorted by time
     private var mealsSorted: [Meal] {
         let arr = (dailyLog?.meals?.allObjects as? [Meal]) ?? []
         return arr.sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
@@ -32,66 +33,105 @@ struct DayView: View {
     var body: some View {
         NavigationStack {
             List {
-                // Date + Today
+                // 1) Date picker (compact) + Today button on the same row
                 Section {
-                    DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                        .onChange(of: selectedDate) { _, new in rebind(to: new) }
+                    HStack(spacing: 12) {
+                        DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                            .onChange(of: selectedDate) { _, new in rebind(to: new) }
 
-                    Button("Today") {
-                        selectedDate = Date().startOfDayLocal
-                        rebind(to: selectedDate)
+                        Spacer(minLength: 8)
+
+                        Button("Today") {
+                            selectedDate = Date().startOfDayLocal
+                            rebind(to: selectedDate)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                     }
                 }
 
-                // Health import (separate section)
-                Section("Health Import (read-only)") {
-                    Button("Import for Selected Day") {
-                        Task { await importDayFromHealth(selectedDate) }
+                // 2) Add Meal (no title, only the button)
+                Section {
+                    Button(action: { showingAddMeal = true }) {
+                        Label("Add Meal", systemImage: "plus.circle.fill")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                            .shadow(radius: 2)
                     }
-
-                    DatePicker("From", selection: $rangeStart, displayedComponents: .date)
-                    DatePicker("To (inclusive)", selection: $rangeEnd, displayedComponents: .date)
-
-                    Button("Import Range") {
-                        Task { await importRangeFromHealth(start: rangeStart, endInclusive: rangeEnd) }
-                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.vertical, 4)
                 }
 
-                // Sleep summary (read-only)
+                // 3) Meals list
+                Section("Meals") {
+                    if mealsSorted.isEmpty {
+                        Text("No meals logged yet.").foregroundStyle(.secondary)
+                    } else {
+                        ForEach(mealsSorted, id: \.objectID) { m in
+                            let time = (m.timestamp ?? Date()).formatted(date: .omitted, time: .shortened)
+                            let type = m.typeRaw ?? "Meal"
+                            let loc  = (m.location ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                            let desc = (m.desc ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                            let parts = [time, type, loc.isEmpty ? nil : loc, desc.isEmpty ? nil : desc].compactMap { $0 }
+
+                            Text(parts.joined(separator: " | "))
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .font(.body)
+                                .padding(.vertical, 2)
+                        }
+                        .onDelete(perform: deleteMeals)   // <- stays on ForEach
+                    }
+                }
+                .id(refreshTick)                           // <- moved here
+
+                // 4) Sleep (read-only summary)
                 if let bm = bodyMetrics,
                    let s = bm.sleepStart, let e = bm.sleepEnd, e > s {
                     Section("Sleep") {
-                        Text(sleepSummary(start: s, end: e)).font(.body)
-                    }
-                }
-
-                // Meals
-                Section("Meals") {
-                    ForEach(mealsSorted, id: \.objectID) { m in
-                        let time = (m.timestamp ?? Date()).formatted(date: .omitted, time: .shortened)
-                        let type = m.typeRaw ?? "Meal"
-                        let loc  = (m.location ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        let desc = (m.desc ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        let parts = [time, type, loc.isEmpty ? nil : loc, desc.isEmpty ? nil : desc].compactMap { $0 }
-
-                        Text(parts.joined(separator: " | "))
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
+                        Text(sleepSummary(start: s, end: e))
                             .font(.body)
-                            .padding(.vertical, 2)
                     }
-                    .onDelete(perform: deleteMeals)
-
-                    Button("Add Meal") { showingAddMeal = true }
                 }
 
-                // Editable body metrics
+                // 5) Body (editable)
                 if let bm = bodyMetrics {
                     BodySection(metrics: bm)
                 }
+
+                // 6) Import data from Health
+                Section("Import data from Health") {
+                    DatePicker("From", selection: $rangeStart, displayedComponents: .date)
+                    DatePicker("To",   selection: $rangeEnd,   displayedComponents: .date)
+
+                    Button {
+                        Task { await importRangeFromHealth(start: rangeStart, endInclusive: rangeEnd) }
+                    } label: {
+                        // Icon on the RIGHT of the word "Import"
+                        HStack {
+                            Text("Import").fontWeight(.semibold)
+                            Spacer(minLength: 8)
+                            Image(systemName: "arrow.down.circle.fill")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             }
             .navigationTitle("FitTrack")
+            .scrollDismissesKeyboard(.interactively)
             .toolbar { EditButton() }
+            .onAppear { rebind(to: selectedDate) }
+            .sheet(isPresented: $showingAddMeal) {
+                    AddMealView(defaultDate: selectedDate) { type, time, loc, desc in
+                        addMeal(type: type, at: time, location: loc, desc: desc)
+                    }
+            }
             .onAppear { rebind(to: selectedDate) }
             .sheet(isPresented: $showingAddMeal) {
                 AddMealView(defaultDate: selectedDate) { type, time, loc, desc in
@@ -120,6 +160,8 @@ struct DayView: View {
             try? ctx.save()
         }
         bodyMetrics = dailyLog?.bodyMetrics
+        // bump so the meals list recomputes when changing days
+        refreshTick &+= 1
     }
 
     private func addMeal(type: String, at time: Date, location: String?, desc: String?) {
@@ -132,11 +174,13 @@ struct DayView: View {
         m.desc = desc
         m.log = log
         try? ctx.save()
+        refreshTick &+= 1
     }
 
     private func deleteMeals(at offsets: IndexSet) {
         offsets.map { mealsSorted[$0] }.forEach(ctx.delete)
         try? ctx.save()
+        refreshTick &+= 1
     }
 
     /// "22:45 → 06:30  (7h 45m)"
@@ -151,10 +195,8 @@ struct DayView: View {
 
     // MARK: - Health import (READ-ONLY; fill but do not overwrite)
 
-    /// Import just one day (selected or any).
     private func importDayFromHealth(_ day: Date) async {
         await HealthKitManager.shared.requestAuthorizationIfNeeded()
-        // ensure we have a log/bm for that day
         rebind(to: day)
         guard let bm = bodyMetrics else { return }
         do {
@@ -172,18 +214,18 @@ struct DayView: View {
                 if liters > 0 { bm.hydrationLiters = liters }
             }
             if bm.weightKg == 0,
-               let w = try await HealthKitManager.shared.latestWeightKg(on: day),
+               let w = try await HealthKitManager.shared.latestWeightKg(upTo: day),
                w > 0 {
                 bm.weightKg = w
             }
             try bm.managedObjectContext?.save()
-            // if we imported for a different day than currently shown, no-op; if same, UI already reflects it
+            refreshTick &+= 1
         } catch {
             print("Health import failed:", error)
         }
     }
 
-    /// Import for a whole range of days (inclusive), without overwriting existing values.
+    /// Inclusive range import
     private func importRangeFromHealth(start: Date, endInclusive: Date) async {
         await HealthKitManager.shared.requestAuthorizationIfNeeded()
         let cal = Calendar.current
@@ -194,7 +236,6 @@ struct DayView: View {
             guard let next = cal.date(byAdding: .day, value: 1, to: day) else { break }
             day = next
         }
-        // refresh UI if current selected day is inside the range
-        rebind(to: selectedDate)
+        rebind(to: selectedDate) // ensure current day’s UI is fresh
     }
 }
