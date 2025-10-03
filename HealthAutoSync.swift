@@ -62,21 +62,25 @@ enum HealthAutoSync {
             if bm.sleepStart == nil { bm.sleepStart = win.start }
             if bm.sleepEnd == nil   { bm.sleepEnd   = win.end }
         }
-        // Steps (only if zero)
-        if bm.steps == 0 {
-            let steps = try await HealthKitManager.shared.stepsTotal(on: day)
-            bm.steps = Int32(steps)
+        // Always refresh steps
+        let steps = try await HealthKitManager.shared.stepsTotal(on: day)
+        bm.steps = Int32(steps)
+
+        // Always refresh sleep
+        if let win = try await HealthKitManager.shared.mainSleepWindow(on: day) {
+            bm.sleepStart = win.start
+            bm.sleepEnd = win.end
         }
         // Hydration (only if zero)
         if bm.hydrationLiters == 0 {
             let liters = try await HealthKitManager.shared.waterLiters(on: day)
             if liters > 0 { bm.hydrationLiters = liters }
         }
-        // Weight (only if zero)
-        if bm.weightKg == 0,
-           let w = try await HealthKitManager.shared.latestWeightKg(upTo: day),
-           w > 0 {
-            bm.weightKg = w
+        // Only set weight if missing
+        if bm.weightKg == 0 {
+            if let w = try await HealthKitManager.shared.latestWeightKg(upTo: day), w > 0 {
+                bm.weightKg = w
+            }
         }
     }
 }

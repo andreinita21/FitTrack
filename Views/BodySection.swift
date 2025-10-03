@@ -4,12 +4,12 @@
 //
 //  Created by Andrei Niță on 20.09.2025.
 //
-
 import SwiftUI
 import CoreData
 
 struct BodySection: View {
     @ObservedObject var metrics: BodyMetrics
+    @FocusState private var stepsFieldFocused: Bool
 
     var body: some View {
         Section("Body") {
@@ -22,30 +22,39 @@ struct BodySection: View {
                        selection: nonOptionalDateBinding($metrics.sleepEnd, default: Date()),
                        displayedComponents: .hourAndMinute)
 
-            // Steps
-            Stepper(
-                "Steps: \(Int(metrics.steps))",
-                value: Binding(
+            // Steps (manual + quick adjust)
+            HStack {
+                Text("Steps:")
+                Spacer()
+                TextField("0", value: Binding(
                     get: { Int(metrics.steps) },
                     set: { metrics.steps = Int32($0) }
-                ),
-                in: 0...100_000
-            )
-
-            // Hydration (keep editable here)
-            HStack {
-                Text("Hydration (L)")
-                Spacer()
-                TextField("0", value: $metrics.hydrationLiters,
-                          format: .number.precision(.fractionLength(2)))
-                    .keyboardType(.decimalPad)
+                ), format: .number)
+                    .keyboardType(.numberPad)
+                    .focused($stepsFieldFocused)
                     .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 120)
+                    .frame(width: 100)
+                    .textFieldStyle(.roundedBorder)
+
+                Button("-") {
+                    if metrics.steps > 0 {
+                        metrics.steps = max(0, metrics.steps - 100)
+                    }
+                }
+                .buttonStyle(.bordered)
+
+                Button("+") {
+                    metrics.steps += 100
+                }
+                .buttonStyle(.bordered)
             }
 
+            // Save button
             Button("Save Body") {
                 try? metrics.managedObjectContext?.save()
+                stepsFieldFocused = false
             }
+            .buttonStyle(.borderedProminent)
         }
     }
 
@@ -53,8 +62,7 @@ struct BodySection: View {
     private func nonOptionalDateBinding(_ source: Binding<Date?>, default def: Date) -> Binding<Date> {
         Binding<Date>(
             get: { source.wrappedValue ?? def },
-            set: { source.wrappedValue = $0 }
-        )
+            set: { source.wrappedValue = $0 })
     }
 }
 
